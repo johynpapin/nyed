@@ -1,4 +1,4 @@
-package ui
+package screen
 
 import (
 	"github.com/gdamore/tcell"
@@ -9,8 +9,6 @@ type Screen struct {
 	mutex *sync.Mutex
 
 	Screen tcell.Screen
-
-	drawables []Drawable
 }
 
 func NewScreen() *Screen {
@@ -29,23 +27,8 @@ func (screen *Screen) Init() error {
 	return screen.Screen.Init()
 }
 
-func (screen *Screen) Draw() error {
-	screen.Screen.Clear()
-	screen.Screen.HideCursor()
-
-	for _, drawable := range screen.drawables {
-		if err := drawable.Draw(screen); err != nil {
-			return err
-		}
-	}
-
-	screen.Screen.Show()
-
-	return nil
-}
-
-func (screen *Screen) AddDrawable(drawable Drawable) {
-	screen.drawables = append(screen.drawables, drawable)
+func (screen *Screen) Close() {
+	screen.Screen.Fini()
 }
 
 func (screen *Screen) Lock() {

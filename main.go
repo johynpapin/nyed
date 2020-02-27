@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/johynpapin/nyed/buffer"
-	"github.com/johynpapin/nyed/events"
-	"github.com/johynpapin/nyed/statusline"
-	"github.com/johynpapin/nyed/ui"
+	"github.com/urfave/cli/v2"
 	"os"
 )
 
@@ -19,19 +16,15 @@ func checkError(err error) {
 }
 
 func main() {
-	screen := ui.NewScreen()
-	handler := events.NewHandler(screen)
+	app := &cli.App{
+		Name: "nyed",
+		Action: func(ctx *cli.Context) error {
+			return NewEditor(ctx.Args().Slice()).Start()
+		},
+	}
 
-	checkError(screen.Init())
-	checkError(handler.Start())
-
-	handler.CurrentBuffer = buffer.NewBuffer()
-	screen.AddDrawable(handler.CurrentBuffer)
-
-	screen.AddDrawable(statusline.NewStatusLine())
-
-	for {
-		checkError(screen.Draw())
-		checkError(handler.Next())
+	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "error starting nyed: %v", err)
+		os.Exit(1)
 	}
 }
