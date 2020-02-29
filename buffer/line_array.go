@@ -25,3 +25,28 @@ func (lineArray *LineArray) RemoveLine(lineIndex int) {
 func (lineArray *LineArray) Line(lineIndex int) *Line {
 	return lineArray.lines[lineIndex]
 }
+
+func (lineArray *LineArray) MergeLineAtTheEndOf(sourceLineIndex int, targetLineIndex int) {
+	sourceLine := lineArray.Line(sourceLineIndex)
+	targetLine := lineArray.Line(targetLineIndex)
+
+	sourceLine.AppendBytes(targetLine.data)
+
+	lineArray.RemoveLine(targetLineIndex)
+}
+
+func (lineArray *LineArray) SplitLineAt(lineIndex int, x int) {
+	lineToSplit := lineArray.Line(lineIndex)
+	lineArray.InsertLineAfter(lineIndex)
+	targetLine := lineArray.Line(lineIndex + 1)
+
+	if x <= 0 {
+		targetLine.data = lineToSplit.data
+		lineToSplit.data = nil
+		return
+	}
+
+	byteIndex := lineToSplit.findByteIndexFromRuneIndex(x - 1)
+	targetLine.data = lineToSplit.data[byteIndex+1:]
+	lineToSplit.data = lineToSplit.data[:byteIndex+1]
+}

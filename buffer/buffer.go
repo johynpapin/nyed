@@ -60,7 +60,11 @@ LineLoop:
 			}
 
 			x++
-			visualX += runewidth.RuneWidth(r)
+			if r == '\t' {
+				visualX += 8 - (visualX % 8)
+			} else {
+				visualX += runewidth.RuneWidth(r)
+			}
 
 			if visualX >= buffer.Width {
 				visualY++
@@ -94,8 +98,13 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 			buffer.Cursor.MoveRight()
 		}
 
+		if eventKey.Key() == tcell.KeyTab {
+			buffer.lineArray.Line(buffer.Cursor.Y).InsertRuneAt(buffer.Cursor.X, '\t')
+			buffer.Cursor.MoveRight()
+		}
+
 		if eventKey.Key() == tcell.KeyEnter {
-			buffer.lineArray.InsertLineAfter(buffer.Cursor.Y)
+			buffer.lineArray.SplitLineAt(buffer.Cursor.Y, buffer.Cursor.X)
 			buffer.Cursor.X = 0
 			buffer.Cursor.savedVisualX = 0
 			buffer.Cursor.Y++
@@ -167,14 +176,13 @@ func (buffer *Buffer) handleBackspace() error {
 		buffer.Cursor.Y--
 		buffer.Cursor.X = len(buffer.lineArray.lines[buffer.Cursor.Y].data)
 
+		buffer.lineArray.MergeLineAtTheEndOf(buffer.Cursor.Y, buffer.Cursor.Y+1)
+
 		return nil
 	}
 
-	currentLine := buffer.lineArray.Line(buffer.Cursor.Y).data
-	_, size := utf8.DecodeLastRune(currentLine)
-
-	buffer.lineArray.Line(buffer.Cursor.Y).data = currentLine[:len(currentLine)-size]
-	buffer.Cursor.X--
+	buffer.lineArray.Line(buffer.Cursor.Y).RemoveRune(buffer.Cursor.X - 1)
+	buffer.Cursor.MoveLeft()
 
 	return nil
 }

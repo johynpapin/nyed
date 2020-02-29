@@ -76,3 +76,7 @@ func (line *Line) VisualWidth(runeIndex int, tabWidth int) int {
 
 	return visualWidth
 }
+
+func (line *Line) RemoveRune(runeIndex int) {
+	line.data = append(line.data[:runeIndex], line.data[runeIndex+1:]...)
+}
