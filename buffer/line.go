@@ -78,5 +78,8 @@ func (line *Line) VisualWidth(runeIndex int, tabWidth int) int {
 }
 
 func (line *Line) RemoveRune(runeIndex int) {
-	line.data = append(line.data[:runeIndex], line.data[runeIndex+1:]...)
+	byteIndex := line.findByteIndexFromRuneIndex(runeIndex)
+
+	_, size := utf8.DecodeRune(line.data[byteIndex:])
+	line.data = append(line.data[:byteIndex], line.data[byteIndex+size:]...)
 }
