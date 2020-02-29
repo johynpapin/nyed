@@ -154,6 +154,8 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 	}
 
 	switch eventKey.Key() {
+	case tcell.KeyEnd:
+		buffer.Cursor.MoveToEndOfLine()
 	case tcell.KeyLeft:
 		buffer.Cursor.MoveLeft()
 	case tcell.KeyRight:
