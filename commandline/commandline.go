@@ -49,5 +49,10 @@ func (commandLine *CommandLine) HandleEventKey(eventKey *tcell.EventKey) (string
 		return command[1:], nil
 	}
 
+	if eventKey.Key() == tcell.KeyBackspace2 {
+		commandLine.CurrentCommand = commandLine.CurrentCommand[:len(commandLine.CurrentCommand)-1]
+		return "", nil
+	}
+
 	return "", nil
 }

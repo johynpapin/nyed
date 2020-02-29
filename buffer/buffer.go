@@ -124,6 +124,14 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 	case utils.MODE_NORMAL:
 		if eventKey.Key() == tcell.KeyRune {
 			switch eventKey.Rune() {
+			case 't':
+				buffer.Cursor.MoveLeft()
+			case 's':
+				buffer.Cursor.MoveDown()
+			case 'r':
+				buffer.Cursor.MoveUp()
+			case 'n':
+				buffer.Cursor.MoveRight()
 			case 'a':
 				buffer.SetCurrentMode(utils.MODE_INSERT)
 				buffer.Cursor.MoveRight()
