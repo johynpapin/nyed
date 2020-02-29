@@ -7,6 +7,7 @@ import (
 	"github.com/johynpapin/nyed/statusline"
 	"github.com/johynpapin/nyed/ui"
 	"github.com/johynpapin/nyed/utils"
+	"github.com/mattn/go-runewidth"
 	"os"
 	"unicode/utf8"
 )
@@ -27,7 +28,6 @@ func NewBuffer() *Buffer {
 		statusLine: statusline.NewStatusLine(),
 		lineArray:  NewLineArray(),
 	}
-
 	buffer.Cursor = NewCursor(buffer)
 
 	return buffer
@@ -60,7 +60,7 @@ LineLoop:
 			}
 
 			x++
-			visualX++
+			visualX += runewidth.RuneWidth(r)
 
 			if visualX >= buffer.Width {
 				visualY++
@@ -97,7 +97,7 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 		if eventKey.Key() == tcell.KeyEnter {
 			buffer.lineArray.InsertLineAfter(buffer.Cursor.Y)
 			buffer.Cursor.X = 0
-			buffer.Cursor.savedX = 0
+			buffer.Cursor.savedVisualX = 0
 			buffer.Cursor.Y++
 		}
 

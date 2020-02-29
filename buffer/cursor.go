@@ -2,12 +2,14 @@ package buffer
 
 import (
 	"github.com/johynpapin/nyed/utils"
+	"github.com/mattn/go-runewidth"
+	"unicode/utf8"
 )
 
 type Cursor struct {
-	buffer *Buffer
-	X, Y   int
-	savedX int
+	buffer       *Buffer
+	X, Y         int
+	savedVisualX int
 }
 
 func NewCursor(buffer *Buffer) *Cursor {
@@ -22,7 +24,7 @@ func (cursor *Cursor) MoveLeft() {
 	}
 
 	cursor.X--
-	cursor.savedX = cursor.X
+	cursor.saveVisualX()
 }
 
 func (cursor *Cursor) MoveRight() {
@@ -33,7 +35,7 @@ func (cursor *Cursor) MoveRight() {
 	}
 
 	cursor.X++
-	cursor.savedX = cursor.X
+	cursor.saveVisualX()
 }
 
 func (cursor *Cursor) MoveUp() {
@@ -54,20 +56,27 @@ func (cursor *Cursor) MoveDown() {
 	cursor.clamp()
 }
 
+func (cursor *Cursor) MoveToStartOfLine() {
+	cursor.X = 0
+	cursor.savedVisualX = 0
+}
+
 func (cursor *Cursor) MoveToEndOfLine() {
 	cursor.X = cursor.cursorLimitX()
 }
 
 func (cursor *Cursor) clamp() {
+	cursor.X = cursor.xFromVisualX(cursor.savedVisualX, 8)
+
 	cursorLimitX := cursor.cursorLimitX()
 
-	if cursor.savedX >= cursorLimitX {
+	if cursor.X > cursorLimitX {
 		cursor.X = cursorLimitX
 	}
 }
 
 func (cursor *Cursor) cursorLimitX() int {
-	cursorLimitX := len(string(cursor.buffer.lineArray.Line(cursor.Y).data)) - 1
+	cursorLimitX := cursor.buffer.lineArray.Line(cursor.Y).LengthInRunes() - 1
 
 	if cursor.buffer.CurrentMode() == utils.MODE_INSERT {
 		cursorLimitX++
@@ -78,4 +87,40 @@ func (cursor *Cursor) cursorLimitX() int {
 	}
 
 	return cursorLimitX
+}
+
+func (cursor *Cursor) saveVisualX() {
+	cursor.savedVisualX = cursor.visualX()
+}
+
+func (cursor *Cursor) visualX() int {
+	if cursor.X <= 0 {
+		return 0
+	}
+
+	return cursor.buffer.lineArray.Line(cursor.Y).VisualWidth(cursor.X-1, 8)
+}
+
+func (cursor *Cursor) xFromVisualX(visualX int, tabWidth int) int {
+	data := cursor.buffer.lineArray.Line(cursor.Y).data
+
+	var x, currentVisualX int
+	for len(data) > 0 && visualX > currentVisualX {
+		r, size := utf8.DecodeRune(data)
+		data = data[size:]
+
+		if r == '\t' {
+			currentVisualX += tabWidth - (currentVisualX % tabWidth)
+		} else {
+			currentVisualX += runewidth.RuneWidth(r)
+		}
+
+		x++
+	}
+
+	if currentVisualX > visualX {
+		x--
+	}
+
+	return x
 }
