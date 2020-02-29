@@ -8,6 +8,12 @@ func NewLineArray() *LineArray {
 	return &LineArray{}
 }
 
+func (lineArray *LineArray) InsertLineBefore(lineIndex int) {
+	lineArray.lines = append(lineArray.lines, nil)
+	copy(lineArray.lines[lineIndex+1:], lineArray.lines[lineIndex:])
+	lineArray.lines[lineIndex] = NewLine()
+}
+
 func (lineArray *LineArray) InsertLineAfter(lineIndex int) {
 	lineArray.lines = append(lineArray.lines, nil)
 	copy(lineArray.lines[lineIndex+2:], lineArray.lines[lineIndex+1:])

@@ -133,6 +133,15 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 				buffer.SetCurrentMode(utils.MODE_COMMAND)
 			case '$':
 				buffer.Cursor.MoveToEndOfLine()
+			case 'o':
+				buffer.lineArray.InsertLineAfter(buffer.Cursor.Y)
+				buffer.Cursor.Y++
+				buffer.Cursor.X = 0
+				buffer.Cursor.savedVisualX = 0
+			case 'O':
+				buffer.lineArray.InsertLineBefore(buffer.Cursor.Y)
+				buffer.Cursor.X = 0
+				buffer.Cursor.savedVisualX = 0
 			case 'd':
 				if buffer.currentCommand == "d" {
 					buffer.lineArray.RemoveLine(buffer.Cursor.Y)
