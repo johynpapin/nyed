@@ -138,10 +138,12 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 				buffer.Cursor.Y++
 				buffer.Cursor.X = 0
 				buffer.Cursor.savedVisualX = 0
+				buffer.SetCurrentMode(utils.MODE_INSERT)
 			case 'O':
 				buffer.lineArray.InsertLineBefore(buffer.Cursor.Y)
 				buffer.Cursor.X = 0
 				buffer.Cursor.savedVisualX = 0
+				buffer.SetCurrentMode(utils.MODE_INSERT)
 			case 'd':
 				if buffer.currentCommand == "d" {
 					buffer.lineArray.RemoveLine(buffer.Cursor.Y)
