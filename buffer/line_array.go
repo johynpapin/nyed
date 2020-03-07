@@ -1,11 +1,25 @@
 package buffer
 
+import (
+	"github.com/gdamore/tcell"
+)
+
 type LineArray struct {
 	lines []*Line
 }
 
 func NewLineArray() *LineArray {
 	return &LineArray{}
+}
+
+func (lineArray *LineArray) ClearColors() {
+	for _, line := range lineArray.lines {
+		line.Colors = make(map[int]tcell.Color)
+	}
+}
+
+func (lineArray *LineArray) Len() int {
+	return len(lineArray.lines)
 }
 
 func (lineArray *LineArray) InsertLineBefore(lineIndex int) {
@@ -54,5 +68,5 @@ func (lineArray *LineArray) SplitLineAt(lineIndex int, x int) {
 
 	byteIndex := lineToSplit.findByteIndexFromRuneIndex(x - 1)
 	targetLine.data = lineToSplit.data[byteIndex+1:]
-	lineToSplit.data = lineToSplit.data[:byteIndex+1]
+	lineToSplit.data = append([]byte(nil), lineToSplit.data[:byteIndex+1]...)
 }

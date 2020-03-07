@@ -48,7 +48,7 @@ func (cursor *Cursor) MoveUp() {
 }
 
 func (cursor *Cursor) MoveDown() {
-	if cursor.Y >= len(cursor.buffer.lineArray.lines)-1 {
+	if cursor.Y >= len(cursor.buffer.LineArray.lines)-1 {
 		return
 	}
 
@@ -76,7 +76,7 @@ func (cursor *Cursor) clamp() {
 }
 
 func (cursor *Cursor) cursorLimitX() int {
-	cursorLimitX := cursor.buffer.lineArray.Line(cursor.Y).LengthInRunes() - 1
+	cursorLimitX := cursor.buffer.LineArray.Line(cursor.Y).LengthInRunes() - 1
 
 	if cursor.buffer.CurrentMode() == utils.MODE_INSERT {
 		cursorLimitX++
@@ -98,11 +98,11 @@ func (cursor *Cursor) visualX() int {
 		return 0
 	}
 
-	return cursor.buffer.lineArray.Line(cursor.Y).VisualWidth(cursor.X-1, 8)
+	return cursor.buffer.LineArray.Line(cursor.Y).VisualWidth(cursor.X-1, 8)
 }
 
 func (cursor *Cursor) xFromVisualX(visualX int, tabWidth int) int {
-	data := cursor.buffer.lineArray.Line(cursor.Y).data
+	data := cursor.buffer.LineArray.Line(cursor.Y).data
 
 	var x, currentVisualX int
 	for len(data) > 0 && visualX > currentVisualX {

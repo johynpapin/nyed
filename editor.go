@@ -4,6 +4,7 @@ import (
 	"github.com/johynpapin/nyed/buffer"
 	"github.com/johynpapin/nyed/commandline"
 	"github.com/johynpapin/nyed/events"
+	"github.com/johynpapin/nyed/highlight"
 	"github.com/johynpapin/nyed/screen"
 	"os"
 )
@@ -40,6 +41,16 @@ func NewEditor(files []string) *Editor {
 func (editor *Editor) Start() error {
 	if err := editor.currentBuffer.Load(); err != nil {
 		return err
+	}
+
+	highlighter := highlight.NewHighlighter(editor.currentBuffer)
+
+	highlighter.Init()
+
+	editor.currentBuffer.OnEdit = func() {
+		if err := highlighter.OnEdit(); err != nil {
+			panic(err)
+		}
 	}
 
 	if err := editor.screen.Init(); err != nil {

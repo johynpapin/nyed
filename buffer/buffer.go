@@ -16,9 +16,10 @@ type Buffer struct {
 	ui.Section
 
 	statusLine     *statusline.StatusLine
-	lineArray      *LineArray
+	LineArray      *LineArray
 	Cursor         *Cursor
 	currentCommand string
+	OnEdit         func()
 
 	FilePath string
 }
@@ -26,7 +27,7 @@ type Buffer struct {
 func NewBuffer() *Buffer {
 	buffer := &Buffer{
 		statusLine: statusline.NewStatusLine(),
-		lineArray:  NewLineArray(),
+		LineArray:  NewLineArray(),
 	}
 	buffer.Cursor = NewCursor(buffer)
 
@@ -38,10 +39,12 @@ func (buffer *Buffer) Draw(screen *screen.Screen) error {
 		return nil
 	}
 
+	currentColor := tcell.ColorWhite
+
 	var visualY int
 
 LineLoop:
-	for y, line := range buffer.lineArray.lines {
+	for y, line := range buffer.LineArray.lines {
 		if visualY > buffer.Height {
 			break LineLoop
 		}
@@ -53,7 +56,12 @@ LineLoop:
 			r, size := utf8.DecodeRune(lineData)
 			lineData = lineData[size:]
 
-			screen.Screen.SetContent(visualX, visualY, r, nil, tcell.StyleDefault)
+			color, exists := line.Colors[x]
+			if exists {
+				currentColor = color
+			}
+
+			screen.Screen.SetContent(visualX, visualY, r, nil, tcell.StyleDefault.Foreground(currentColor))
 
 			if buffer.Cursor.Y == y && buffer.Cursor.X == x {
 				screen.Screen.ShowCursor(visualX, visualY)
@@ -76,6 +84,11 @@ LineLoop:
 			}
 		}
 
+		color, exists := line.Colors[x]
+		if exists {
+			currentColor = color
+		}
+
 		if buffer.Cursor.Y == y && buffer.Cursor.X == x {
 			screen.Screen.ShowCursor(visualX, visualY)
 		}
@@ -94,17 +107,17 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 	switch buffer.CurrentMode() {
 	case utils.MODE_INSERT:
 		if eventKey.Key() == tcell.KeyRune {
-			buffer.lineArray.Line(buffer.Cursor.Y).InsertRuneAt(buffer.Cursor.X, eventKey.Rune())
+			buffer.LineArray.Line(buffer.Cursor.Y).InsertRuneAt(buffer.Cursor.X, eventKey.Rune())
 			buffer.Cursor.MoveRight()
 		}
 
 		if eventKey.Key() == tcell.KeyTab {
-			buffer.lineArray.Line(buffer.Cursor.Y).InsertRuneAt(buffer.Cursor.X, '\t')
+			buffer.LineArray.Line(buffer.Cursor.Y).InsertRuneAt(buffer.Cursor.X, '\t')
 			buffer.Cursor.MoveRight()
 		}
 
 		if eventKey.Key() == tcell.KeyEnter {
-			buffer.lineArray.SplitLineAt(buffer.Cursor.Y, buffer.Cursor.X)
+			buffer.LineArray.SplitLineAt(buffer.Cursor.Y, buffer.Cursor.X)
 			buffer.Cursor.X = 0
 			buffer.Cursor.savedVisualX = 0
 			buffer.Cursor.Y++
@@ -142,22 +155,22 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 			case '$':
 				buffer.Cursor.MoveToEndOfLine()
 			case 'o':
-				buffer.lineArray.InsertLineAfter(buffer.Cursor.Y)
+				buffer.LineArray.InsertLineAfter(buffer.Cursor.Y)
 				buffer.Cursor.Y++
 				buffer.Cursor.X = 0
 				buffer.Cursor.savedVisualX = 0
 				buffer.SetCurrentMode(utils.MODE_INSERT)
 			case 'O':
-				buffer.lineArray.InsertLineBefore(buffer.Cursor.Y)
+				buffer.LineArray.InsertLineBefore(buffer.Cursor.Y)
 				buffer.Cursor.X = 0
 				buffer.Cursor.savedVisualX = 0
 				buffer.SetCurrentMode(utils.MODE_INSERT)
 			case 'd':
 				if buffer.currentCommand == "d" {
-					buffer.lineArray.RemoveLine(buffer.Cursor.Y)
+					buffer.LineArray.RemoveLine(buffer.Cursor.Y)
 					buffer.currentCommand = ""
 
-					if buffer.Cursor.Y >= len(buffer.lineArray.lines) {
+					if buffer.Cursor.Y >= len(buffer.LineArray.lines) {
 						buffer.Cursor.MoveUp()
 					}
 
@@ -185,6 +198,10 @@ func (buffer *Buffer) HandleEventKey(eventKey *tcell.EventKey) error {
 		buffer.Cursor.MoveDown()
 	}
 
+	if buffer.OnEdit != nil {
+		buffer.OnEdit()
+	}
+
 	return nil
 }
 
@@ -195,14 +212,14 @@ func (buffer *Buffer) handleBackspace() error {
 		}
 
 		buffer.Cursor.Y--
-		buffer.Cursor.X = len(buffer.lineArray.lines[buffer.Cursor.Y].data)
+		buffer.Cursor.X = len(buffer.LineArray.lines[buffer.Cursor.Y].data)
 
-		buffer.lineArray.MergeLineAtTheEndOf(buffer.Cursor.Y, buffer.Cursor.Y+1)
+		buffer.LineArray.MergeLineAtTheEndOf(buffer.Cursor.Y, buffer.Cursor.Y+1)
 
 		return nil
 	}
 
-	buffer.lineArray.Line(buffer.Cursor.Y).RemoveRune(buffer.Cursor.X - 1)
+	buffer.LineArray.Line(buffer.Cursor.Y).RemoveRune(buffer.Cursor.X - 1)
 	buffer.Cursor.MoveLeft()
 
 	return nil
@@ -222,7 +239,7 @@ func (buffer *Buffer) SetSize(x, y, width, height int) {
 
 func (buffer *Buffer) Load() error {
 	if buffer.FilePath == "" {
-		buffer.lineArray.lines = []*Line{NewLine()}
+		buffer.LineArray.lines = []*Line{NewLine()}
 		return nil
 	}
 
@@ -234,7 +251,7 @@ func (buffer *Buffer) Load() error {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		buffer.lineArray.lines = append(buffer.lineArray.lines, NewLineFromBytes(scanner.Bytes()))
+		buffer.LineArray.lines = append(buffer.LineArray.lines, NewLineFromBytes(scanner.Bytes()))
 	}
 
 	return scanner.Err()
@@ -251,7 +268,7 @@ func (buffer *Buffer) Write() error {
 	}
 	defer file.Close()
 
-	for _, line := range buffer.lineArray.lines {
+	for _, line := range buffer.LineArray.lines {
 		file.Write(line.data)
 		file.WriteString("\n")
 	}

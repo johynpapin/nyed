@@ -1,21 +1,26 @@
 package buffer
 
 import (
+	"github.com/gdamore/tcell"
 	"github.com/mattn/go-runewidth"
 	"unicode/utf8"
 )
 
 type Line struct {
-	data []byte
+	data   []byte
+	Colors map[int]tcell.Color
 }
 
 func NewLine() *Line {
-	return &Line{}
+	return &Line{
+		Colors: make(map[int]tcell.Color),
+	}
 }
 
 func NewLineFromBytes(data []byte) *Line {
 	return &Line{
-		data: data,
+		data:   data,
+		Colors: make(map[int]tcell.Color),
 	}
 }
 
@@ -35,6 +40,14 @@ func (line *Line) findByteIndexFromRuneIndex(runeIndex int) int {
 	}
 
 	return byteIndex
+}
+
+func (line *Line) ByteAt(byteIndex int) byte {
+	return line.data[byteIndex]
+}
+
+func (line *Line) Slice(byteIndex int) []byte {
+	return line.data[byteIndex:]
 }
 
 func (line *Line) LengthInRunes() int {
