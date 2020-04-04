@@ -1,7 +1,6 @@
-package buffer
+package state
 
 import (
-	"github.com/johynpapin/nyed/utils"
 	"github.com/mattn/go-runewidth"
 	"unicode/utf8"
 )
@@ -48,7 +47,9 @@ func (cursor *Cursor) MoveUp() {
 }
 
 func (cursor *Cursor) MoveDown() {
-	if cursor.Y >= len(cursor.buffer.LineArray.lines)-1 {
+	cursorLimitY := cursor.cursorLimitY()
+
+	if cursor.Y >= cursorLimitY {
 		return
 	}
 
@@ -78,15 +79,19 @@ func (cursor *Cursor) clamp() {
 func (cursor *Cursor) cursorLimitX() int {
 	cursorLimitX := cursor.buffer.LineArray.Line(cursor.Y).LengthInRunes() - 1
 
-	if cursor.buffer.CurrentMode() == utils.MODE_INSERT {
+	/* if cursor.buffer.CurrentMode() == utils.MODE_INSERT {
 		cursorLimitX++
-	}
+	} */
 
 	if cursorLimitX < 0 {
 		return 0
 	}
 
 	return cursorLimitX
+}
+
+func (cursor *Cursor) cursorLimitY() int {
+	return len(cursor.buffer.LineArray.Lines) - 1
 }
 
 func (cursor *Cursor) saveVisualX() {

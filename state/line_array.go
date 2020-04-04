@@ -1,49 +1,49 @@
-package buffer
+package state
 
 import (
 	"github.com/gdamore/tcell"
 )
 
 type LineArray struct {
-	lines []*Line
+	Lines []*Line
 }
 
 func NewLineArray() *LineArray {
 	return &LineArray{}
 }
 
-func (lineArray *LineArray) ClearColors() {
-	for _, line := range lineArray.lines {
-		line.Colors = make(map[int]tcell.Color)
+func (lineArray *LineArray) ClearStyles() {
+	for _, line := range lineArray.Lines {
+		line.Styles = make(map[int]tcell.Style)
 	}
 }
 
 func (lineArray *LineArray) Len() int {
-	return len(lineArray.lines)
+	return len(lineArray.Lines)
 }
 
 func (lineArray *LineArray) InsertLineBefore(lineIndex int) {
-	lineArray.lines = append(lineArray.lines, nil)
-	copy(lineArray.lines[lineIndex+1:], lineArray.lines[lineIndex:])
-	lineArray.lines[lineIndex] = NewLine()
+	lineArray.Lines = append(lineArray.Lines, nil)
+	copy(lineArray.Lines[lineIndex+1:], lineArray.Lines[lineIndex:])
+	lineArray.Lines[lineIndex] = NewLine()
 }
 
 func (lineArray *LineArray) InsertLineAfter(lineIndex int) {
-	lineArray.lines = append(lineArray.lines, nil)
-	copy(lineArray.lines[lineIndex+2:], lineArray.lines[lineIndex+1:])
-	lineArray.lines[lineIndex+1] = NewLine()
+	lineArray.Lines = append(lineArray.Lines, nil)
+	copy(lineArray.Lines[lineIndex+2:], lineArray.Lines[lineIndex+1:])
+	lineArray.Lines[lineIndex+1] = NewLine()
 }
 
 func (lineArray *LineArray) RemoveLine(lineIndex int) {
-	lineArray.lines = append(lineArray.lines[:lineIndex], lineArray.lines[lineIndex+1:]...)
+	lineArray.Lines = append(lineArray.Lines[:lineIndex], lineArray.Lines[lineIndex+1:]...)
 
-	if len(lineArray.lines) == 0 {
-		lineArray.lines = []*Line{NewLine()}
+	if len(lineArray.Lines) == 0 {
+		lineArray.Lines = []*Line{NewLine()}
 	}
 }
 
 func (lineArray *LineArray) Line(lineIndex int) *Line {
-	return lineArray.lines[lineIndex]
+	return lineArray.Lines[lineIndex]
 }
 
 func (lineArray *LineArray) MergeLineAtTheEndOf(sourceLineIndex int, targetLineIndex int) {

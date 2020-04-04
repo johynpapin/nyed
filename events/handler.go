@@ -2,42 +2,37 @@ package events
 
 import (
 	"github.com/gdamore/tcell"
-	"github.com/johynpapin/nyed/buffer"
-	"github.com/johynpapin/nyed/commandline"
+	"github.com/johynpapin/nyed/highlight"
 	"github.com/johynpapin/nyed/screen"
-	"github.com/johynpapin/nyed/utils"
+	"github.com/johynpapin/nyed/state"
+	"github.com/johynpapin/nyed/ui"
 )
 
 type Handler struct {
-	events chan tcell.Event
+	tcellEvents   chan tcell.Event
+	waitingEvents chan Event
 
-	Screen        *screen.Screen
-	CommandLine   *commandline.CommandLine
-	onQuit        func()
-	CurrentBuffer *buffer.Buffer
+	Screen      *screen.Screen
+	State       *state.State
+	Drawer      *ui.Drawer
+	Highlighter *highlight.Highlighter
 }
 
-func NewHandler(screen *screen.Screen, commandLine *commandline.CommandLine, onQuit func()) *Handler {
+func NewHandler(screen *screen.Screen, state *state.State, drawer *ui.Drawer, highlighter *highlight.Highlighter) *Handler {
 	return &Handler{
-		events: make(chan tcell.Event),
+		tcellEvents:   make(chan tcell.Event),
+		waitingEvents: make(chan Event),
 
 		Screen:      screen,
-		CommandLine: commandLine,
-		onQuit:      onQuit,
+		State:       state,
+		Drawer:      drawer,
+		Highlighter: highlighter,
 	}
 }
 
 func (handler *Handler) Start() error {
-	go func() {
-		for {
-			handler.Screen.Lock()
-			event := handler.Screen.Screen.PollEvent()
-			handler.Screen.Unlock()
-
-			handler.events <- event
-		}
-	}()
-
+	go handler.waitingEventsLoop()
+	go handler.incomingEventsLoop()
 	return nil
 }
 
@@ -45,50 +40,69 @@ func (handler *Handler) Stop() error {
 	return nil
 }
 
-func (handler *Handler) Next() error {
-	rawEvent := <-handler.events
+func (handler *Handler) PushEvent(event Event) {
+	handler.waitingEvents <- event
+}
+
+func (handler *Handler) incomingEventsLoop() {
+	for {
+		handler.nextTcellEvent()
+	}
+}
+
+func (handler *Handler) nextTcellEvent() {
+	handler.Screen.Lock()
+	rawEvent := handler.Screen.TcellScreen.PollEvent()
+	handler.Screen.Unlock()
 
 	switch event := rawEvent.(type) {
 	case *tcell.EventKey:
-		if handler.CurrentBuffer.CurrentMode() != utils.MODE_COMMAND {
-			if err := handler.CurrentBuffer.HandleEventKey(event); err != nil {
-				return err
-			}
-
-			if handler.CurrentBuffer.CurrentMode() == utils.MODE_COMMAND {
-				handler.CommandLine.CurrentCommand = ":"
-			}
-		} else {
-			command, err := handler.CommandLine.HandleEventKey(event)
-			if err != nil {
-				return err
-			}
-
-			if command != "" {
-				handler.handleCommand(command)
-			}
-
-			if handler.CommandLine.CurrentCommand == "" {
-				handler.CurrentBuffer.SetCurrentMode(utils.MODE_NORMAL)
-				utils.ResetCursorStyle()
-			}
+		switch event.Key() {
+		case tcell.KeyUp:
+			handler.PushEvent(&MoveCursorEvent{
+				Direction: CURSOR_DIRECTION_UP,
+			})
+		case tcell.KeyRight:
+			handler.PushEvent(&MoveCursorEvent{
+				Direction: CURSOR_DIRECTION_RIGHT,
+			})
+		case tcell.KeyDown:
+			handler.PushEvent(&MoveCursorEvent{
+				Direction: CURSOR_DIRECTION_DOWN,
+			})
+		case tcell.KeyLeft:
+			handler.PushEvent(&MoveCursorEvent{
+				Direction: CURSOR_DIRECTION_LEFT,
+			})
 		}
 	case *tcell.EventResize:
-		handler.handleResize(event)
+		width, height := event.Size()
+		handler.PushEvent(&ResizeEvent{
+			Width:  width,
+			Height: height,
+		})
 	}
-
-	return nil
 }
 
-func (handler *Handler) handleCommand(command string) {
-	switch command {
-	case "w":
-		handler.CurrentBuffer.Write()
-	case "q":
-		fallthrough
-	case "q!":
-		fallthrough
-	case "x":
-		handler.onQuit()
+func (handler *Handler) waitingEventsLoop() error {
+	for {
+		if err := handler.nextWaitingEvent(); err != nil {
+			return err
+		}
 	}
+}
+
+func (handler *Handler) nextWaitingEvent() error {
+	event := <-handler.waitingEvents
+
+	if err := event.Apply(&eventContext{
+		state:       handler.State,
+		highlighter: handler.Highlighter,
+	}); err != nil {
+		return err
+	}
+
+	handler.Drawer.Draw()
+
+	return nil
 }

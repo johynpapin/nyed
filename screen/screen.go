@@ -8,7 +8,7 @@ import (
 type Screen struct {
 	mutex *sync.Mutex
 
-	Screen tcell.Screen
+	TcellScreen tcell.Screen
 }
 
 func NewScreen() *Screen {
@@ -19,16 +19,16 @@ func NewScreen() *Screen {
 
 func (screen *Screen) Init() error {
 	var err error
-	screen.Screen, err = tcell.NewScreen()
+	screen.TcellScreen, err = tcell.NewScreen()
 	if err != nil {
 		return err
 	}
 
-	return screen.Screen.Init()
+	return screen.TcellScreen.Init()
 }
 
 func (screen *Screen) Close() {
-	screen.Screen.Fini()
+	screen.TcellScreen.Fini()
 }
 
 func (screen *Screen) Lock() {

@@ -1,35 +1,17 @@
-package commandline
+package state
 
 import (
 	"github.com/gdamore/tcell"
-	"github.com/johynpapin/nyed/screen"
-	"github.com/johynpapin/nyed/ui"
 )
 
 type CommandLine struct {
-	ui.Section
+	Width, Y int
 
 	CurrentCommand string
 }
 
 func NewCommandLine() *CommandLine {
 	return &CommandLine{}
-}
-
-func (commandLine *CommandLine) Draw(screen *screen.Screen) error {
-	if commandLine.CurrentCommand == "" {
-		return nil
-	}
-
-	var x int
-	for _, r := range commandLine.CurrentCommand {
-		screen.Screen.SetContent(commandLine.X+x, commandLine.Y, r, nil, tcell.StyleDefault)
-		x++
-	}
-
-	screen.Screen.ShowCursor(commandLine.X+x, commandLine.Y)
-
-	return nil
 }
 
 func (commandLine *CommandLine) HandleEventKey(eventKey *tcell.EventKey) (string, error) {

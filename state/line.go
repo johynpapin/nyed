@@ -1,4 +1,4 @@
-package buffer
+package state
 
 import (
 	"github.com/gdamore/tcell"
@@ -8,20 +8,24 @@ import (
 
 type Line struct {
 	data   []byte
-	Colors map[int]tcell.Color
+	Styles map[int]tcell.Style
 }
 
 func NewLine() *Line {
 	return &Line{
-		Colors: make(map[int]tcell.Color),
+		Styles: make(map[int]tcell.Style),
 	}
 }
 
 func NewLineFromBytes(data []byte) *Line {
 	return &Line{
 		data:   data,
-		Colors: make(map[int]tcell.Color),
+		Styles: make(map[int]tcell.Style),
 	}
+}
+
+func (line *Line) Bytes() []byte {
+	return line.data
 }
 
 func (line *Line) findByteIndexFromRuneIndex(runeIndex int) int {

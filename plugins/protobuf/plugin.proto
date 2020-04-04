@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "protobuf";
+
+service Plugin {
+  rpc RegisterLanguage(RegisterLanguageRequest) returns (RegisterLanguageReply) {}
+}
+
+message RegisterLanguageRequest {
+  string filetype = 1;
+  string queries = 2;
+}
+
+message RegisterLanguageReply {
+}
